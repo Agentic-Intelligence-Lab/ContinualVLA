@@ -4,7 +4,9 @@
 
 ### Can VLA Models Learn from Real-World Data Continually without Forgetting?
 
-[Jiarun Zhu](https://github.com/Agentic-Intelligence-Lab), [Yijun Hong](https://github.com/Agentic-Intelligence-Lab), [Xiaoquan Sun](https://github.com/Agentic-Intelligence-Lab), [Zetian Xu](https://github.com/Agentic-Intelligence-Lab), [Mingqi Yuan](https://github.com/Agentic-Intelligence-Lab), [Zhiyong Wang](https://github.com/Agentic-Intelligence-Lab), [Wenjun Zeng](https://github.com/Agentic-Intelligence-Lab), [Jiayu Chen](https://github.com/Agentic-Intelligence-Lab)
+Jiarun Zhu, Yijun Hong, Xiaoquan Sun, Zetian Xu, Mingqi Yuan, Zhiyong Wang, Wenjun Zeng, Jiayu Chen
+
+*Agentic Intelligence Lab (AIL), The University of Hong Kong*
 
 <p align="center">
   <a href="https://arxiv.org/abs/2605.26820"><img src="https://img.shields.io/badge/arXiv-2605.26820-b31b1b.svg" alt="arXiv"></a>&nbsp;
@@ -15,7 +17,7 @@
 
 ---
 
-Official implementation of the paper "Can VLA Models Learn from Real-World Data Continually without Forgetting?". This codebase is built on [Physical Intelligence's openpi](https://github.com/Physical-Intelligence/openpi).
+Official implementation of the paper "Can VLA Models Learn from Real-World Data Continually without Forgetting?". This codebase is built on Physical Intelligence's openpi.
 
 ![Teaser](assets/teaser.png)
 
@@ -267,4 +269,4 @@ The codebase builds on [openpi](https://github.com/Physical-Intelligence/openpi)
 
 ## Acknowledgements
 
-This work is supported by the Agentic Intelligence Lab (AIL) at The University of Hong Kong. We thank the Physical Intelligence team for open-sourcing the openpi codebase.
+This work is supported by the [Agentic Intelligence Lab (AIL)](https://agentic-intelligence-lab.org/) at The University of Hong Kong. We thank the Physical Intelligence team for open-sourcing the [openpi](https://github.com/Physical-Intelligence/openpi) codebase.
