@@ -22,17 +22,16 @@ Key features:
 from __future__ import annotations
 
 import argparse
-import time
+import contextlib
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+import time
 
-import numpy as np
-import polars as pl
 import matplotlib.pyplot as plt
-
-from openpi_client import websocket_client_policy
+import numpy as np
 from openpi_client import image_tools
+from openpi_client import websocket_client_policy
+import polars as pl
 
 
 # -----------------------------
@@ -60,13 +59,11 @@ class PyAVVideoReader(VideoReaderBase):
     """
 
     def __init__(self, mp4_path: Path, out_h: int = 224, out_w: int = 224):
-        import av  # lazy import
+        import av  # lazy import  # noqa: PLC0415
 
         # Reduce ffmpeg/av logging noise
-        try:
+        with contextlib.suppress(Exception):
             av.logging.set_level(av.logging.ERROR)
-        except Exception:
-            pass
 
         self.mp4_path = mp4_path
         self.out_h = out_h
@@ -77,12 +74,13 @@ class PyAVVideoReader(VideoReaderBase):
         self._decoded_iter = self.container.decode(self.stream)
 
         self._cur_frame_idx = -1
-        self._cur_rgb: Optional[np.ndarray] = None
+        self._cur_rgb: np.ndarray | None = None
 
     def _reset(self) -> None:
         """Reset decode iterator to the beginning."""
         self.container.close()
-        import av
+        import av  # noqa: PLC0415
+
         self.container = av.open(str(self.mp4_path))
         self.stream = self.container.streams.video[0]
         self._decoded_iter = self.container.decode(self.stream)
@@ -116,17 +114,15 @@ class PyAVVideoReader(VideoReaderBase):
         return self._cur_rgb if self._cur_rgb is not None else np.zeros((self.out_h, self.out_w, 3), dtype=np.uint8)
 
     def close(self) -> None:
-        try:
+        with contextlib.suppress(Exception):
             self.container.close()
-        except Exception:
-            pass
 
 
 class OpenCVVideoReader(VideoReaderBase):
     """OpenCV (cv2.VideoCapture) backend."""
 
     def __init__(self, mp4_path: Path, out_h: int = 224, out_w: int = 224):
-        import cv2  # lazy import
+        import cv2  # lazy import  # noqa: PLC0415
 
         self.cv2 = cv2
         self.cap = cv2.VideoCapture(str(mp4_path))
@@ -143,14 +139,11 @@ class OpenCVVideoReader(VideoReaderBase):
 
         rgb = self.cv2.cvtColor(bgr, self.cv2.COLOR_BGR2RGB)
         rgb = image_tools.resize_with_pad(rgb, self.out_h, self.out_w)
-        rgb = image_tools.convert_to_uint8(rgb)
-        return rgb
+        return image_tools.convert_to_uint8(rgb)
 
     def close(self) -> None:
-        try:
+        with contextlib.suppress(Exception):
             self.cap.release()
-        except Exception:
-            pass
 
 
 def make_video_reader(backend: str, mp4_path: Path, out_h: int = 224, out_w: int = 224) -> VideoReaderBase:
@@ -230,7 +223,7 @@ CAM_KEYS = [
 ]
 
 
-def build_obs(row: dict, frames: Dict[str, np.ndarray], prompt: str) -> dict:
+def build_obs(row: dict, frames: dict[str, np.ndarray], prompt: str) -> dict:
     """
     Build an OpenPI observation dict that matches galaxea_policy expected keys.
     - State keys are already dotted in parquet.
@@ -285,10 +278,10 @@ def extract_pred14(result: dict) -> np.ndarray:
     Predicted 14D action from OpenPI inference result.
     Many OpenPI policies output a chunk of horizon H; we take the FIRST step (t=0).
     """
-    la = np.asarray(result["action.left_arm"], dtype=np.float32)   # (H,6)
+    la = np.asarray(result["action.left_arm"], dtype=np.float32)  # (H,6)
     ra = np.asarray(result["action.right_arm"], dtype=np.float32)  # (H,6)
 
-    lg = np.asarray(result["action.left_gripper"], dtype=np.float32)   # (H,) or (H,1)
+    lg = np.asarray(result["action.left_gripper"], dtype=np.float32)  # (H,) or (H,1)
     rg = np.asarray(result["action.right_gripper"], dtype=np.float32)  # (H,) or (H,1)
 
     la0 = la[0].reshape(-1)[:6]
@@ -318,14 +311,24 @@ def plot_14d_grid(pred14_all: np.ndarray, gt14_all: np.ndarray, out_png: Path) -
     out_png.parent.mkdir(parents=True, exist_ok=True)
 
     names = [
-        "L_arm_0", "L_arm_1", "L_arm_2", "L_arm_3", "L_arm_4", "L_arm_5",
+        "L_arm_0",
+        "L_arm_1",
+        "L_arm_2",
+        "L_arm_3",
+        "L_arm_4",
+        "L_arm_5",
         "L_gripper",
-        "R_arm_0", "R_arm_1", "R_arm_2", "R_arm_3", "R_arm_4", "R_arm_5",
+        "R_arm_0",
+        "R_arm_1",
+        "R_arm_2",
+        "R_arm_3",
+        "R_arm_4",
+        "R_arm_5",
         "R_gripper",
     ]
 
-    T = pred14_all.shape[0]
-    x = np.arange(T)
+    t = pred14_all.shape[0]
+    x = np.arange(t)
 
     fig, axes = plt.subplots(nrows=7, ncols=2, figsize=(18, 20), sharex=True)
     axes = axes.reshape(-1)
@@ -342,7 +345,7 @@ def plot_14d_grid(pred14_all: np.ndarray, gt14_all: np.ndarray, out_png: Path) -
         h2 = ax.plot(x, pred14_all[:, d], label="Pred")
 
         ax.set_title(f"{d:02d} - {names[d]}")
-        ax.grid(True, alpha=0.3)
+        ax.grid(visible=True, alpha=0.3)
 
         # Put legend in each subplot (small & readable)
         ax.legend(loc="upper right", fontsize=8, frameon=True)
@@ -374,7 +377,7 @@ def plot_14d_grid(pred14_all: np.ndarray, gt14_all: np.ndarray, out_png: Path) -
 # -----------------------------
 # Episode selection
 # -----------------------------
-def select_episode_parquets(data_dir: Path, episodes: int, episode_ids: str) -> List[Path]:
+def select_episode_parquets(data_dir: Path, episodes: int, episode_ids: str) -> list[Path]:
     """
     Select parquet files (episode_XXXXXX.parquet) according to CLI options.
     - If episode_ids provided: select those exact ids.
@@ -421,9 +424,9 @@ def main() -> None:
     parquets = select_episode_parquets(data_dir, cfg.episodes, cfg.episode_ids)
     print(f"Selected {len(parquets)} episode parquet(s).")
 
-    pred_list: List[np.ndarray] = []
-    gt_list: List[np.ndarray] = []
-    recs: List[dict] = []
+    pred_list: list[np.ndarray] = []
+    gt_list: list[np.ndarray] = []
+    recs: list[dict] = []
 
     steps = 0
 
@@ -432,7 +435,7 @@ def main() -> None:
         df = pl.read_parquet(pq)
 
         # Open one reader per camera for this episode
-        readers: Dict[str, VideoReaderBase] = {}
+        readers: dict[str, VideoReaderBase] = {}
         try:
             for cam_key in CAM_KEYS:
                 mp4 = video_dir / cam_key / f"episode_{episode_id:06d}.mp4"
@@ -448,7 +451,7 @@ def main() -> None:
                 # Read frames for each camera (missing -> zeros)
                 frames = {}
                 for cam_key in CAM_KEYS:
-                    r = readers.get(cam_key, None)
+                    r = readers.get(cam_key)
                     if r is None:
                         frames[cam_key] = np.zeros((224, 224, 3), dtype=np.uint8)
                     else:
@@ -460,17 +463,17 @@ def main() -> None:
                 t0 = time.time()
                 result = client.infer(obs)
                 infer_ms = (time.time() - t0) * 1000.0
-                
-                #print(f"the length of result:", len(result))
-                #print(f"the keys of result:", result.keys())
-                #print(f"results:", result)
+
+                # print(f"the length of result:", len(result))
+                # print(f"the keys of result:", result.keys())
+                # print(f"results:", result)
                 gt14 = extract_gt14(row)
 
-                #print("gt14:", gt14)
+                # print("gt14:", gt14)
 
                 pred14 = extract_pred14(result)
 
-                #print("pred14:", pred14)
+                # print("pred14:", pred14)
 
                 pred_list.append(pred14)
                 gt_list.append(gt14)
@@ -511,7 +514,7 @@ def main() -> None:
         raise RuntimeError("No frames evaluated. Check dataset paths / episode selection.")
 
     pred_all = np.stack(pred_list, axis=0)  # (T,14)
-    gt_all = np.stack(gt_list, axis=0)      # (T,14)
+    gt_all = np.stack(gt_list, axis=0)  # (T,14)
 
     # Save numeric results
     np.savez_compressed(out_dir / "pred_gt_14d.npz", pred14=pred_all, gt14=gt_all)
@@ -534,4 +537,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

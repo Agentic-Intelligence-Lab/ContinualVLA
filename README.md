@@ -1,18 +1,31 @@
+<div align="center">
+
 # ContinualVLA
 
-**Can VLA Models Learn from Real-World Data Continually without Forgetting?**
+### Can VLA Models Learn from Real-World Data Continually without Forgetting?
 
 [Jiarun Zhu](https://github.com/Agentic-Intelligence-Lab), [Yijun Hong](https://github.com/Agentic-Intelligence-Lab), [Xiaoquan Sun](https://github.com/Agentic-Intelligence-Lab), [Zetian Xu](https://github.com/Agentic-Intelligence-Lab), [Mingqi Yuan](https://github.com/Agentic-Intelligence-Lab), [Zhiyong Wang](https://github.com/Agentic-Intelligence-Lab), [Wenjun Zeng](https://github.com/Agentic-Intelligence-Lab), [Jiayu Chen](https://github.com/Agentic-Intelligence-Lab)
 
-[![arXiv](https://img.shields.io/badge/arXiv-2605.26820-b31b1b.svg)](https://arxiv.org/abs/2605.26820)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Project Page](https://img.shields.io/badge/Project-Page-green.svg)](https://agentic-intelligence-lab.org/Never/pages/continualvla)
+<p align="center">
+  <a href="https://arxiv.org/abs/2605.26820"><img src="https://img.shields.io/badge/arXiv-2605.26820-b31b1b.svg" alt="arXiv"></a>&nbsp;
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"></a>&nbsp;
+  <a href="https://agentic-intelligence-lab.org/Never/pages/continualvla"><img src="https://img.shields.io/badge/Project-Page-green.svg" alt="Project Page"></a>&nbsp;
+  <a href="https://github.com/Agentic-Intelligence-Lab/RoboNever"><img src="https://img.shields.io/badge/Dataset-RoboNever-yellow.svg" alt="Dataset"></a>
+</p>
+
+---
 
 Official implementation of the paper "Can VLA Models Learn from Real-World Data Continually without Forgetting?". This codebase is built on [Physical Intelligence's openpi](https://github.com/Physical-Intelligence/openpi).
 
+![Teaser](assets/teaser.png)
+
+</div>
+
+---
+
 ## Overview
 
-Vision-language-action (VLA) models provide a promising foundation for general-purpose robotics. However, deploying them in the real world requires the ability to continually acquire new skills while retaining previously learned behaviors — a challenge largely unexplored under realistic conditions.
+Vision-language-action (VLA) models provide a promising foundation for general-purpose robotics. However, deploying them in the real world requires the ability to continually acquire new skills while retaining previously learned behaviors -- a challenge largely unexplored under realistic conditions.
 
 This work provides the **first empirical study of real-world continual VLA learning** and offers practical guidance for deploying long-lived robot policies.
 
@@ -21,6 +34,8 @@ This work provides the **first empirical study of real-world continual VLA learn
 - **Real-world continual learning dataset**: Four sequential manipulation tasks spanning rigid-object pick-and-place, contact-rich pressing, and deformable-object folding.
 - **Empirical findings**: VLA models suffer significant catastrophic forgetting when continually learning from heterogeneous real-world demonstrations.
 - **Systematic evaluation of experience replay**: Key implementation factors that govern the success of replay-based continual learning are identified and analyzed.
+
+---
 
 ## Installation
 
@@ -74,20 +89,51 @@ export OPENPI_PYTORCH_WEIGHT_PATH="$HOME/.cache/openpi/pi05_base_pytorch"
 
 You can also [download from Google Cloud Storage](https://console.cloud.google.com/storage/browser/openpi-assets/checkpoints/pi05_base) if you have GCS access (`gs://openpi-assets/checkpoints/pi05_base/params`).
 
+---
+
 ## Dataset
 
-The real-world continual learning dataset consists of four sequential manipulation tasks collected on a Piper robotic arm:
+The real-world continual learning dataset (part of the [RoboNever](https://github.com/Agentic-Intelligence-Lab/RoboNever) project) consists of four sequential manipulation tasks collected on a Piper dual-arm robotic arm:
 
-| Task | Description | Type |
-|------|-------------|------|
-| Stack Bowls | Pick and stack bowls | Rigid-object pick-and-place |
-| Hang Cup | Hang a cup on a rack | Articulated-object manipulation |
-| Fold Towel | Fold a deformable towel | Deformable-object manipulation |
-| Press Button | Press a button with precise contact | Contact-rich manipulation |
+<div align="center">
+
+| Task | Description | Type | Episodes | HuggingFace |
+|:----:|:-----------:|:----:|:--------:|:-----------:|
+| **Stack Bowls** | Pick and stack bowls | Rigid-object pick-and-place | 500 | [Download](https://huggingface.co/datasets/Ray0v0/cl-piper-single-stack-bowls) |
+| **Hang Cup** | Hang a cup on a rack | Articulated-object manipulation | 500 | [Download](https://huggingface.co/datasets/Ray0v0/cl-piper-single-hang-cup) |
+| **Fold Towel** | Fold a deformable towel | Deformable-object manipulation | 500 | [Download](https://huggingface.co/datasets/Ray0v0/cl-piper-single-fold-towel) |
+| **Press Button** | Press a button with precise contact | Contact-rich manipulation | 500 | [Download](https://huggingface.co/datasets/Ray0v0/cl-piper-single-press-button) |
+
+</div>
+
+### Quick Download
+
+```bash
+# Set dataset root (default: /data/datasets)
+export OPENPI_DATA_ROOT="/path/to/datasets"
+
+# Download all 4 tasks
+bash scripts/download_dataset.sh
+```
+
+### Load with LeRobot
+
+```python
+from lerobot.common.datasets.lerobot_dataset import LeRobotDataset
+ds = LeRobotDataset("Ray0v0/cl-piper-single-stack-bowls")
+```
+
+### Data Format
+
+All datasets are in [LeRobot v2.1](https://github.com/huggingface/lerobot) format with:
+- **Robot**: Piper dual-arm (14-DOF: 6 joints + 1 gripper per arm)
+- **Cameras**: 4 views (head, left_wrist, right_wrist, front_view) at 480x640
+- **FPS**: 30
+- **Total**: 2,000 episodes, ~560K frames across all tasks
 
 ### Data directory structure
 
-Datasets are in [LeRobot](https://github.com/huggingface/lerobot) format. Set `OPENPI_DATA_ROOT` to point to your dataset storage (defaults to `/data/datasets`). The expected directory layout:
+Set `OPENPI_DATA_ROOT` to point to your dataset storage (defaults to `/data/datasets`). The expected directory layout:
 
 ```
 $OPENPI_DATA_ROOT/
@@ -95,11 +141,13 @@ $OPENPI_DATA_ROOT/
 │   ├── stack_bowls_20260413/
 │   ├── hang_cup_20260413/
 │   ├── fold_towel_20260417/
-│   └── press_button_20260414_trimmed/
+│   └── press_button_20260414/
 └── ...
 ```
 
 You can override the path for individual tasks by editing the `local_roots` entries in `src/openpi/training/config.py`.
+
+---
 
 ## Training
 
@@ -142,7 +190,7 @@ bash scripts/train_cl.sh
 Key hyperparameters (set as environment variables):
 - `DATA_BUFFER_SIZE`: Fraction of data retained from old tasks (default: 0.2)
 - `DATA_REPLAY_RATIO`: Per-step probability of sampling from replay buffer (default: 0.2)
-- `REPLAY_MODE`: Buffer sampling mode — `"episode"` or `"transition"`
+- `REPLAY_MODE`: Buffer sampling mode -- `"episode"` or `"transition"`
 
 Resume from a checkpoint:
 
@@ -170,6 +218,8 @@ python scripts/compute_norm_stats.py --config-name <config_name>
 
 You can also use a shared norm stats file across tasks by setting `OPENPI_NORM_STATS_DIR`.
 
+---
+
 ## Project Structure
 
 ```
@@ -189,6 +239,8 @@ You can also use a shared norm stats file across tasks by setting `OPENPI_NORM_S
 └── third_party/          # External dependencies (ALOHA, LIBERO)
 ```
 
+---
+
 ## Citation
 
 If you find this work useful, please cite:
@@ -203,11 +255,15 @@ If you find this work useful, please cite:
 }
 ```
 
+---
+
 ## License
 
 This project is released under the [MIT License](LICENSE).
 
 The codebase builds on [openpi](https://github.com/Physical-Intelligence/openpi) by Physical Intelligence, which is also MIT-licensed. The Gemma model weights are subject to their own [license terms](LICENSE_GEMMA.txt).
+
+---
 
 ## Acknowledgements
 
